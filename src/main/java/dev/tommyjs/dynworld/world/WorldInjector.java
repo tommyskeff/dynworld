@@ -194,10 +194,34 @@ public final class WorldInjector {
                 return objectMethod(proxy, method, args);
             }
             return switch (method.getName()) {
+                // Chunk getOrCreateChunk(int, int)
                 case "getOrCreateChunk" -> createMarkedChunk(worldServer, ((Number) args[0]).intValue(),
                     ((Number) args[1]).intValue(), generator, skyLight);
+                // Chunk getChunkAt(BlockPosition) AND void getChunkAt(IChunkProvider, int, int)
+                case "getChunkAt" -> null;
+                // boolean a(IChunkProvider, Chunk, int, int)
+                case "a" -> false;
+                // boolean isChunkLoaded(int, int)
+                case "isChunkLoaded" -> false;
+                // boolean saveChunks(boolean, IProgressUpdate)
+                case "saveChunks" -> true;
+                // boolean unloadChunks()
+                case "unloadChunks" -> false;
+                // boolean canSave()
+                case "canSave" -> true;
+                // String getName()
+                case "getName" -> "VoidChunkProvider";
+                // List<BiomeBase.BiomeMeta> getMobsFor(EnumCreatureType, BlockPosition)
                 case "getMobsFor" -> new ArrayList<>();
-                default -> throw new UnsupportedOperationException();
+                // BlockPosition findNearestMapFeature(World, String, BlockPosition)
+                case "findNearestMapFeature" -> null;
+                // int getLoadedChunks()
+                case "getLoadedChunks" -> 0;
+                // void recreateStructures(Chunk, int, int)
+                case "recreateStructures" -> null;
+                // void c()
+                case "c" -> null;
+                default -> throw new UnsupportedOperationException("Unhandled IChunkProvider method: " + method);
             };
         };
         return Proxy.newProxyInstance(I_CHUNK_PROVIDER.getClassLoader(), new Class[]{I_CHUNK_PROVIDER}, handler);
@@ -210,10 +234,27 @@ public final class WorldInjector {
             }
 
             return switch (method.getName()) {
+                // WorldData getWorldData()
                 case "getWorldData" -> worldData;
+                // IChunkLoader createChunkLoader(WorldProvider)
                 case "createChunkLoader" -> chunkLoader;
+                // UUID getUUID()
                 case "getUUID" -> id;
-                default -> throw new UnsupportedOperationException();
+                // void checkSession()
+                case "checkSession" -> null;
+                // void saveWorldData(WorldData) AND void saveWorldData(WorldData, NBTTagCompound)
+                case "saveWorldData" -> null;
+                // void a()
+                case "a" -> null;
+                // IPlayerFileData getPlayerFileData()
+                case "getPlayerFileData" -> null;
+                // File getDirectory()
+                case "getDirectory" -> null;
+                // File getDataFile(String)
+                case "getDataFile" -> null;
+                // String g()
+                case "g" -> null;
+                default -> throw new UnsupportedOperationException("Unhandled IDataManager method: " + method);
             };
         };
         return Proxy.newProxyInstance(I_DATA_MANAGER.getClassLoader(), new Class[]{I_DATA_MANAGER}, handler);
@@ -225,8 +266,9 @@ public final class WorldInjector {
                 return objectMethod(proxy, method, args);
             }
 
-            Class<?>[] params = method.getParameterTypes();
-            if (method.getReturnType() == NMS_CHUNK && params.length == 3) {
+            String name = method.getName();
+            int n = method.getParameterCount();
+            if (name.equals("a") && n == 3) {
                 Object world = args[0];
                 int x = ((Number) args[1]).intValue();
                 int z = ((Number) args[2]).intValue();
@@ -238,13 +280,17 @@ public final class WorldInjector {
                 markChunkNonEmpty(chunk);
                 return chunk;
             }
-            if (params.length == 2 && NMS_CHUNK.isAssignableFrom(params[1]) && method.getName().equals("a")) {
+            if (name.equals("a") && n == 2) {
                 Object chunk = args[1];
                 storage.save(NmsChunk.locX(chunk), NmsChunk.locZ(chunk),
                     new ChunkViewImpl(chunk, NmsChunk.locX(chunk), NmsChunk.locZ(chunk), skyLight));
+                return null;
             }
-
-            return null;
+            // void b(World, Chunk), void a(), void b()
+            if ((name.equals("b") && n == 2) || ((name.equals("a") || name.equals("b")) && n == 0)) {
+                return null;
+            }
+            throw new UnsupportedOperationException("Unhandled IChunkLoader method: " + method);
         };
         return Proxy.newProxyInstance(I_CHUNK_LOADER.getClassLoader(), new Class[]{I_CHUNK_LOADER}, handler);
     }
