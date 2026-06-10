@@ -25,7 +25,7 @@ public final class CapturedRegion {
     private final char[][] sections;
     private final int[] nonAir;
 
-    private CapturedRegion(int width, int height, int length, int offsetX, int offsetY, int offsetZ) {
+    public CapturedRegion(int width, int height, int length, int offsetX, int offsetY, int offsetZ) {
         this.width = width;
         this.height = height;
         this.length = length;
@@ -136,7 +136,7 @@ public final class CapturedRegion {
         return sections[sectionIdx(sx, sy, sz)];
     }
 
-    private void setSection(int sx, int sy, int sz, char[] section) {
+    public void setSection(int sx, int sy, int sz, char[] section) {
         int i = sectionIdx(sx, sy, sz);
         sections[i] = section;
         int count = 0;
@@ -184,8 +184,29 @@ public final class CapturedRegion {
         return (sy * sectionsZ + sz) * sectionsX + sx;
     }
 
-    private static int ceilDiv(int v) {
+    private int ceilDiv(int v) {
         return (v + 15) >> 4;
+    }
+
+    public @NotNull CapturedRegion copy() {
+        CapturedRegion region = new CapturedRegion(
+            width,
+            height,
+            length,
+            offsetX,
+            offsetY,
+            offsetZ
+        );
+        
+        for (int i = 0; i < sections.length; i++) {
+            if (sections[i] != null) {
+                region.sections[i] = sections[i].clone();
+            }
+        }
+        
+        System.arraycopy(nonAir, 0, region.nonAir, 0, nonAir.length);
+
+        return region;
     }
 
 }
