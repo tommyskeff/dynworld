@@ -73,9 +73,11 @@ public final class SchematicUtil {
         schematic.putInt("WEOffsetY", region.getOffsetY());
         schematic.putInt("WEOffsetZ", region.getOffsetZ());
 
-        GZIPOutputStream gzip = new GZIPOutputStream(new BufferedOutputStream(out));
+        BufferedOutputStream buffered = new BufferedOutputStream(out);
+        GZIPOutputStream gzip = new GZIPOutputStream(buffered);
         new NBTSerializer(false).toStream(new NamedTag("Schematic", schematic), gzip);
         gzip.finish();
+        buffered.flush();
     }
 
     public static @NotNull CapturedRegion read(@NotNull Path file) throws IOException {
