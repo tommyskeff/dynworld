@@ -1,11 +1,13 @@
 # DynWorld
 
-A lightweight library for creating and manipulating worlds on Minecraft 1.8.
+A lightweight library for creating and manipulating worlds and entities on Minecraft 1.8.
 
 DynWorld lets you spin up empty (or custom-generated) worlds at runtime and edit them
 through a fast, low-level chunk API that bypasses Bukkit's per-block overhead. It works
 directly on NMS chunk sections (`char[]` block arrays), so capturing and pasting large
-regions stays cheap even on the legacy 1.8 block format.
+regions stays cheap even on the legacy 1.8 block format. It also provides packet-level
+virtual entities that live entirely client-side, so you can show mobs, players, and objects
+to viewers without ever spawning anything on the server.
 
 ## Features
 
@@ -14,6 +16,7 @@ regions stays cheap even on the legacy 1.8 block format.
 - Fast block, section, and region access via `ChunkView`.
 - Capture regions and save/load them as MCEdit-style `.schematic` files.
 - Off-thread / time-sliced region pasting through an `OperationPool`.
+- Packet-level virtual entities (mobs, players, objects, paintings, xp orbs) via `EntityTracker`.
 
 ## Installation
 
@@ -21,7 +24,7 @@ regions stays cheap even on the legacy 1.8 block format.
 <dependency>
     <groupId>dev.tommyjs</groupId>
     <artifactId>dynworld</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
 </dependency>
 ```
 
@@ -130,4 +133,54 @@ pool.submit(paste).thenRun(() -> getLogger().info("Paste complete"));
 
 The pool spreads work across ticks using the configured millisecond budget, so a single
 large schematic is applied incrementally instead of in one blocking burst.
+
+## Virtual entities
+
+`EntityTracker` spawns client-side entities by sending packets directly — they don't exist
+on the server, so they're cheap and never interact with the world. Each tracker holds a set
+of viewers and the entities shown to them; spawn, destroy, and movement packets are batched
+and flushed on `tick()`.
+
+```java
+EntityTracker tracker = EntityTracker.create();
+tracker.addViewer(player);
+
+MobEntity zombie = tracker.spawnMob(EntityTypes.ZOMBIE, EntityPose.of(0, 64, 0, 0, 0));
+zombie.setEquipment(List.of(new Equipment(EquipmentSlot.HELMET, helmet)));
+```
+
+Mutators are callable from any thread; they record state and the changes are sent on the
+next `tick()`. `move` takes a smooth flag — `true` sends relative-move packets for fluid
+motion, `false` teleports (use it when scrubbing or jumping position):
+
+```java
+zombie.move(EntityPose.of(5, 64, 0, 90, 0), true);
+zombie.setMetadata(metadata);   // raw packetevents EntityData (1.8 indices)
+zombie.animate(EntityAnimationType.SWING_MAIN_ARM);
+```
+
+Each entity has a view range and per-viewer visibility. It spawns automatically for viewers
+within range and despawns when they leave; `hide`/`show` force a viewer-specific override:
+
+```java
+zombie.setRange(48.0);
+zombie.hide(player);   // never shown to this viewer
+```
+
+`freeze` halts a frozen entity and pins client-simulated types (arrows, items, etc.) in
+place. Drive the tracker yourself from your scheduler, or hand it to `EntityTrackers`:
+
+```java
+Closeable handle = EntityTrackers.schedule(tracker, Duration.ofMillis(50));
+// ...
+handle.close();   // stop ticking
+```
+
+Each tracker draws ids from an `EntityIdAllocator`. The default covers the top half of the
+int range to stay clear of real server entities; pass your own to control the range (e.g. to
+give multiple trackers disjoint ids):
+
+```java
+EntityTracker tracker = EntityTracker.create(EntityIdAllocator.range(1_000_000, 2_000_000));
+```
 
