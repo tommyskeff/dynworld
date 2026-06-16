@@ -6,7 +6,7 @@
 
     <groupId>dev.tommyjs</groupId>
     <artifactId>dynworld</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
@@ -22,6 +22,10 @@
         <repository>
             <id>jitpack.io</id>
             <url>https://jitpack.io</url>
+        </repository>
+        <repository>
+            <id>codemc-releases</id>
+            <url>https://repo.codemc.io/repository/maven-releases/</url>
         </repository>
     </repositories>
 
@@ -42,6 +46,12 @@
             <groupId>com.github.Querz</groupId>
             <artifactId>NBT</artifactId>
             <version>6.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.retrooper</groupId>
+            <artifactId>packetevents-spigot</artifactId>
+            <version>2.12.2</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
