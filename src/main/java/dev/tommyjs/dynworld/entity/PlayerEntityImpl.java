@@ -23,6 +23,7 @@ class PlayerEntityImpl extends AbstractVirtualEntity implements PlayerEntity {
 
     private final UserProfile profile;
     private @Nullable Duration tablistLinger = Duration.ofSeconds(3);
+    private boolean tablistManaged = true;
     private final Map<UUID, Long> lingerDeadlines = new ConcurrentHashMap<>();
 
     PlayerEntityImpl(@NotNull EntityTrackerImpl tracker, int entityId, @NotNull UserProfile profile, @NotNull EntityPose pose) {
@@ -36,11 +37,18 @@ class PlayerEntityImpl extends AbstractVirtualEntity implements PlayerEntity {
     }
 
     @Override
+    public void setTablistManaged(boolean managed) {
+        this.tablistManaged = managed;
+    }
+
+    @Override
     protected void sendSpawn(@NotNull Player viewer) {
-        PlayerData data = new PlayerData(null, profile, GameMode.SURVIVAL, 0);
-        send(viewer, new WrapperPlayServerPlayerInfo(Action.ADD_PLAYER, List.of(data)));
+        if (tablistManaged) {
+            PlayerData data = new PlayerData(null, profile, GameMode.SURVIVAL, 0);
+            send(viewer, new WrapperPlayServerPlayerInfo(Action.ADD_PLAYER, List.of(data)));
+        }
         send(viewer, new WrapperPlayServerSpawnPlayer(entityId, profile.getUUID(), location(), Collections.emptyList()));
-        if (tablistLinger != null) {
+        if (tablistManaged && tablistLinger != null) {
             lingerDeadlines.put(viewer.getUniqueId(), System.currentTimeMillis() + tablistLinger.toMillis());
         }
     }

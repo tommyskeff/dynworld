@@ -8,4 +8,6 @@ public interface PlayerEntity extends VirtualEntity {
 
     void setTablistLinger(@Nullable Duration linger);
 
+    void setTablistManaged(boolean managed);
+
 }
