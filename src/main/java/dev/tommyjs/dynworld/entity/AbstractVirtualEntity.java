@@ -20,6 +20,7 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEn
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityStatus;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityTeleport;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityVelocity;
+import dev.tommyjs.dynworld.nms.NmsWorldAccess;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -387,7 +388,7 @@ abstract class AbstractVirtualEntity implements VirtualEntity {
             UUID uuid = player.getUniqueId();
             boolean visible = present && !hiddenFor.contains(uuid) && withinRange(player);
             boolean wasShown = shown.contains(uuid);
-            if (visible && !wasShown) {
+            if (visible && !wasShown && isChunkSent(player)) {
                 showFor(player);
                 shown.add(uuid);
             } else if (!visible && wasShown) {
@@ -584,6 +585,12 @@ abstract class AbstractVirtualEntity implements VirtualEntity {
         double dx = player.getLocation().getX() - pose.x();
         double dz = player.getLocation().getZ() - pose.z();
         return dx * dx + dz * dz <= range * range;
+    }
+
+    private boolean isChunkSent(@NotNull Player player) {
+        int chunkX = (int) Math.floor(pose.x()) >> 4;
+        int chunkZ = (int) Math.floor(pose.z()) >> 4;
+        return NmsWorldAccess.isChunkSent(player, chunkX, chunkZ);
     }
 
     private void sendEquipment(@NotNull Player player) {
