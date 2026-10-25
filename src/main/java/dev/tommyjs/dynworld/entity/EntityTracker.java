@@ -28,11 +28,19 @@ public interface EntityTracker {
 
     @NotNull Collection<UUID> viewers();
 
+    void transferViewer(@NotNull Player player, @NotNull EntityTracker to);
+
     @NotNull MobEntity spawnMob(@NotNull EntityType type, @NotNull EntityPose at);
+
+    @NotNull MobEntity spawnMob(int entityId, @NotNull EntityType type, @NotNull EntityPose at);
 
     @NotNull ObjectEntity spawnObject(@NotNull EntityType type, @NotNull EntityPose at, int objectData);
 
+    @NotNull ObjectEntity spawnObject(int entityId, @NotNull EntityType type, @NotNull EntityPose at, int objectData);
+
     @NotNull PlayerEntity spawnPlayer(@NotNull UserProfile profile, @NotNull EntityPose at);
+
+    @NotNull PlayerEntity spawnPlayer(int entityId, @NotNull UserProfile profile, @NotNull EntityPose at);
 
     @NotNull PaintingEntity spawnPainting(@NotNull PaintingType art, @NotNull EntityPose at, @NotNull Direction direction);
 

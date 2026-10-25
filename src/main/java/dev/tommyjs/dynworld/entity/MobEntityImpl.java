@@ -30,6 +30,11 @@ class MobEntityImpl extends AbstractVirtualEntity implements MobEntity {
     }
 
     @Override
+    protected @NotNull Object spawnIdentity() {
+        return type;
+    }
+
+    @Override
     protected boolean pinWhileFrozen() {
         return false;
     }

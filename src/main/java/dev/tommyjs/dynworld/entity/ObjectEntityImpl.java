@@ -7,6 +7,7 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSp
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -31,6 +32,11 @@ class ObjectEntityImpl extends AbstractVirtualEntity implements ObjectEntity {
     @Override
     protected void sendDestroy(@NotNull Player viewer) {
         send(viewer, new WrapperPlayServerDestroyEntities(entityId));
+    }
+
+    @Override
+    protected @NotNull Object spawnIdentity() {
+        return List.of(type, objectData);
     }
 
     @Override

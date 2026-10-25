@@ -134,6 +134,12 @@ abstract class AbstractVirtualEntity implements VirtualEntity {
 
     protected void onHide(@NotNull Player viewer) {}
 
+    protected void onHandOff(@NotNull Player viewer, @NotNull AbstractVirtualEntity successor) {}
+
+    protected @NotNull Object spawnIdentity() {
+        return getClass();
+    }
+
     @Override
     public int entityId() {
         return entityId;
@@ -554,6 +560,76 @@ abstract class AbstractVirtualEntity implements VirtualEntity {
         onHide(player);
     }
 
+    boolean adopt(@NotNull Player player, @NotNull AbstractVirtualEntity previous) {
+        if (!spawnIdentity().equals(previous.spawnIdentity()) || dead() || previous.dead()
+            || !previous.handOff(player, this)) {
+            return false;
+        }
+
+        lock.lock();
+        try {
+            shown.add(player.getUniqueId());
+            resync(player);
+            established = false;
+            positionDirty = true;
+            metadataDirty = true;
+            equipmentDirty = true;
+            return true;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private boolean dead() {
+        lock.lock();
+        try {
+            return lastHealth != null && lastHealth <= 0f;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private boolean handOff(@NotNull Player player, @NotNull AbstractVirtualEntity successor) {
+        if (!successor.wouldShow(player)) {
+            return false;
+        }
+
+        lock.lock();
+        try {
+            if (!shown.remove(player.getUniqueId())) {
+                return false;
+            }
+            onHandOff(player, successor);
+            return true;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private boolean wouldShow(@NotNull Player player) {
+        lock.lock();
+        try {
+            return present && !hiddenFor.contains(player.getUniqueId()) && withinRange(player);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private void resync(@NotNull Player player) {
+        Location at = established
+            ? new Location(encX / FIXED, encY / FIXED, encZ / FIXED, fromAngle(encYaw), fromAngle(encPitch))
+            : location();
+        send(player, new WrapperPlayServerEntityTeleport(entityId, at, true));
+        send(player, new WrapperPlayServerEntityHeadLook(entityId, established ? fromAngle(encHead) : pose.headYaw()));
+        if (!metadata.isEmpty()) {
+            send(player, new WrapperPlayServerEntityMetadata(entityId, metadata));
+        }
+        sendEquipment(player);
+        if (vehicleId != null) {
+            send(player, new WrapperPlayServerAttachEntity(entityId, vehicleId, false));
+        }
+    }
+
     void viewerRemoved(@NotNull Player player) {
         lock.lock();
         try {
@@ -614,6 +690,10 @@ abstract class AbstractVirtualEntity implements VirtualEntity {
 
     private static int toAngle(float degrees) {
         return (int) Math.floor(degrees * 256.0f / 360.0f);
+    }
+
+    private static float fromAngle(int angle) {
+        return angle * 360.0f / 256.0f;
     }
 
 }
