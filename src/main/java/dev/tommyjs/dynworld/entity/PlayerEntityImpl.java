@@ -64,6 +64,25 @@ class PlayerEntityImpl extends AbstractVirtualEntity implements PlayerEntity {
     }
 
     @Override
+    protected @NotNull Object spawnIdentity() {
+        return List.of(PlayerEntityImpl.class, profile.getUUID());
+    }
+
+    @Override
+    protected void onHandOff(@NotNull Player viewer, @NotNull AbstractVirtualEntity successor) {
+        Long deadline = lingerDeadlines.remove(viewer.getUniqueId());
+        if (deadline == null) {
+            return;
+        }
+        if (successor instanceof PlayerEntityImpl player && player.tablistManaged) {
+            player.lingerDeadlines.put(viewer.getUniqueId(), deadline);
+            return;
+        }
+        PlayerData data = new PlayerData(null, profile, GameMode.SURVIVAL, 0);
+        send(viewer, new WrapperPlayServerPlayerInfo(Action.REMOVE_PLAYER, List.of(data)));
+    }
+
+    @Override
     protected void onTick() {
         long now = System.currentTimeMillis();
         for (Map.Entry<UUID, Long> entry : lingerDeadlines.entrySet()) {
